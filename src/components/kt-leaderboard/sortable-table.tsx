@@ -83,12 +83,12 @@ export function SortableTable({
                 </TableHeader>
                 <TableBody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                     {data.map((model, index) => (
-                        <TableRow 
+                        <TableRow
                             key={model.model}
                             className={`
                                 transition-colors
-                                ${index % 2 === 0 
-                                    ? 'bg-white dark:bg-gray-900' 
+                                ${index % 2 === 0
+                                    ? 'bg-white dark:bg-gray-900'
                                     : 'bg-gray-50 dark:bg-gray-800'
                                 }
                                 hover:bg-gray-100 dark:hover:bg-gray-700
@@ -99,8 +99,8 @@ export function SortableTable({
                             </TableCell>
                             {metrics.map(metric => (
                                 datasets.map(dataset => (
-                                    <TableCell 
-                                        key={`${dataset}_${metric.key}`} 
+                                    <TableCell
+                                        key={`${dataset}_${metric.key}`}
                                         className="text-center min-w-[100px] py-4 border-r border-gray-200 dark:border-gray-700"
                                     >
                                         {renderCell(model, dataset, metric)}
@@ -114,6 +114,9 @@ export function SortableTable({
                     ))}
                 </TableBody>
             </Table>
+            <div className="text-xs text-gray-500 dark:text-gray-400 p-2 text-center border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <p>* Original data can be obtained from <a href="https://docs.google.com/spreadsheets/d/1cj5KaN1tGFhlzeWfigga-vHap0OHwNRu7jUlli1vJKA/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Google Sheet</a></p>
+            </div>
         </div>
     );
 }

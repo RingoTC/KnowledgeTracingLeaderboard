@@ -2,6 +2,27 @@
 
 A comprehensive leaderboard for knowledge tracing models, following the "All In One" protocol to ensure fair and standardized evaluation. You can visit this leaderboard by visiting [https://knowledge-tracing.vercel.app/](https://knowledge-tracing.vercel.app/).
 
+## Setup
+
+### Environment Variables
+
+To run this project, you need to set up the following environment variables:
+
+1. Copy the `.env.template` file to `.env.development.local`:
+   ```bash
+   cp .env.template .env.development.local
+   ```
+
+2. Update the values in `.env.development.local` with your Google Sheets credentials.
+
+### Google Sheets Configuration
+
+This project uses Google Sheets as a data source. You need to:
+
+1. Create a service account in Google Cloud Console
+2. Share your Google Sheet with the service account email
+3. Set the appropriate environment variables with your service account credentials
+
 ## Overview
 
 This leaderboard is inspired by the pykt-toolkit (Liu et al., 2022) and uses their evaluation framework. We maintain and update the results for new models based on their standardized protocol.

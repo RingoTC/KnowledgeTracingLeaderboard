@@ -1,23 +1,16 @@
-import { createClient } from 'redis';
 import { NextResponse } from 'next/server';
+import { fetchLeaderboardData } from '@/utils/googleSheets';
 
 export async function GET() {
   try {
-    const redis = await createClient({
-      url: process.env.REDIS_URL,
-      password: process.env.REDIS_PASSWORD,
-    }).connect();
+    // Fetch data directly from Google Sheets
+    const data = await fetchLeaderboardData();
 
-    const data = await redis.get('leaderboard_data');
-    await redis.quit();
-
-    if (!data) {
+    if (!data || data.length === 0) {
       return NextResponse.json({ error: 'No data found' }, { status: 404 });
     }
 
-    // Parse the data and return directly
-    const parsedData = JSON.parse(data);
-    return NextResponse.json(parsedData);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching leaderboard data:', error);
     return NextResponse.json(
@@ -25,4 +18,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-} 
+}

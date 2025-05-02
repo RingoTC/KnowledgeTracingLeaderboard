@@ -1,7 +1,8 @@
 import { createClient } from 'redis';
-import XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { ModelData, Score, DatasetScores } from '../types/index';
 
 // 加载环境变量
 dotenv.config({ path: path.join(process.cwd(), '.env.development.local') });
@@ -11,15 +12,15 @@ interface BenchmarkData {
   [key: string]: string | number;
 }
 
-function parseScoreString(str: string): { value: number; stdDev: number } | null {
-  if (str === '-') return null;
+function parseScoreString(str: string | number): Score | null {
+  if (str === '-' || str === '') return null;
+  if (typeof str === 'number') return { value: str, stdDev: 0 };
   const [value, stdDev] = str.split('±').map(Number);
   return { value, stdDev };
 }
 
 function normalizeDatasetName(name: string): string {
-  // 移除空格和特殊字符，转换为小写
-  return name.toLowerCase().replace(/[-\s]/g, '_');
+  return name.toLowerCase().replace(/[\s-]/g, '_');
 }
 
 async function uploadToRedis() {
@@ -55,10 +56,13 @@ async function uploadToRedis() {
     console.log('Dataset names:', datasetNames);
 
     // 处理数据
-    const processedData = accData.map((accItem, index) => {
+    const processedData: ModelData[] = accData.map((accItem, index) => {
       const modelName = accItem.Model.trim();
       const aucItem = aucData[index];
-      const modelData: any = { model: modelName };
+      const modelData: ModelData = { 
+        model: modelName,
+        scores: {} as Record<string, DatasetScores>
+      };
 
       // 为每个数据集创建结构
       datasetNames.forEach(dataset => {
@@ -66,9 +70,9 @@ async function uploadToRedis() {
         const aucScore = aucItem[dataset];
         const normalizedDataset = normalizeDatasetName(dataset);
         
-        modelData[normalizedDataset] = {
-          accuracy: typeof accScore === 'string' ? parseScoreString(accScore) : null,
-          auc: typeof aucScore === 'string' ? parseScoreString(aucScore) : null
+        modelData.scores[normalizedDataset] = {
+          accuracy: parseScoreString(accScore),
+          auc: parseScoreString(aucScore)
         };
       });
 
@@ -79,11 +83,10 @@ async function uploadToRedis() {
     await redisClient.set('leaderboard_data', JSON.stringify(processedData));
 
     console.log('Data uploaded to Redis successfully');
-
-    // 关闭Redis连接
     await redisClient.quit();
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error uploading data to Redis:', error);
+    process.exit(1);
   }
 }
 

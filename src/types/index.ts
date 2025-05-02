@@ -4,26 +4,17 @@ export type Score = {
 };
 
 export type DatasetScores = {
-    accuracy: Score | null;
-    auc: Score | null;
+    accuracy: Score | null;  // null when experiment is not completed
+    auc: Score | null;      // null when experiment is not completed
 };
 
-export type Dataset = 
-    | "assist2009"
-    | "algebra2005"
-    | "bridge2006"
-    | "nips34"
-    | "xes3g5m"
-    | "ednet_small"
-    | "ednet_large"
-    | "statics2011"
-    | "assist2015"
-    | "poj";
+export type Dataset = string;  // Dataset is just a string identifier
 
 export type ModelData = {
     model: string;
-} & {
-    [K in Dataset]: DatasetScores;
+    scores: {
+        [dataset: string]: DatasetScores;
+    };
 };
 
 export type SortConfig = {

@@ -11,7 +11,10 @@ export function WinsCell({ model, datasets, metrics, bestScores }: WinsCellProps
     const wins = datasets.reduce((total, dataset) => {
         return total + metrics.reduce((metricTotal, metric) => {
             const key = `${dataset}_${metric}`;
-            const score = model[dataset][metric]?.value;
+            const datasetScores = model.scores[dataset];
+            if (!datasetScores) return metricTotal;
+            
+            const score = datasetScores[metric]?.value;
             if (score != null && score === bestScores.get(key)) {
                 return metricTotal + 1;
             }

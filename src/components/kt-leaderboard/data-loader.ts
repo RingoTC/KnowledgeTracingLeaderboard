@@ -1,4 +1,4 @@
-import { ModelData, Dataset, DatasetScores } from "@/types";
+import { ModelData } from "@/types";
 import { cacheData } from "./cache-data";
 
 export class DataLoader {
@@ -25,16 +25,28 @@ export class DataLoader {
         }
     }
 
-    public async loadData(): Promise<ModelData[]> {
-        // Return cached data immediately
-        const initialData = this.cachedData;
-
-        // Start loading API data in the background if not already preloaded
-        if (!this.isPreloaded) {
-            this.loadApiData();
+    public async loadData(initialData?: ModelData[]): Promise<ModelData[]> {
+        // If we have initial data from SSR, use it
+        if (initialData) {
+            this.apiData = initialData;
+            return initialData;
         }
 
-        return initialData;
+        // Otherwise try to fetch from API
+        try {
+            const response = await fetch('/api/leaderboard');
+            if (!response.ok) {
+                throw new Error('Failed to fetch data');
+            }
+            const newData = await response.json();
+            if (this.compareData(newData)) {
+                this.apiData = newData;
+            }
+            return this.apiData || this.cachedData;
+        } catch (error) {
+            console.error('Error loading data:', error);
+            return this.apiData || this.cachedData;
+        }
     }
 
     private async loadApiData() {
@@ -44,57 +56,21 @@ export class DataLoader {
         try {
             const response = await fetch('/api/leaderboard');
             if (!response.ok) {
-                console.warn('Failed to fetch data from API, using cached data');
-                return;
+                throw new Error('Failed to fetch data');
             }
-            this.apiData = await response.json();
-            
-            // Compare and update if there are differences
-            this.updateDataIfNeeded();
+            const newData = await response.json();
+            if (this.compareData(newData)) {
+                this.apiData = newData;
+            }
         } catch (error) {
-            console.warn('Error loading API data, using cached data:', error);
+            console.error('Error loading API data:', error);
         } finally {
             this.isLoading = false;
         }
     }
 
-    private updateDataIfNeeded() {
-        if (!this.apiData) return;
-
-        const hasChanges = this.compareData(this.cachedData, this.apiData);
-        if (hasChanges) {
-            this.cachedData = this.apiData;
-            // You can emit an event or use a callback here to notify components of the update
-        }
-    }
-
-    private compareData(oldData: ModelData[], newData: ModelData[]): boolean {
-        if (oldData.length !== newData.length) return true;
-
-        for (let i = 0; i < oldData.length; i++) {
-            const oldModel = oldData[i];
-            const newModel = newData[i];
-
-            if (oldModel.model !== newModel.model) return true;
-
-            // Compare all dataset scores
-            for (const dataset in oldModel) {
-                if (dataset === 'model') continue;
-                
-                const oldScores = oldModel[dataset as Dataset] as DatasetScores;
-                const newScores = newModel[dataset as Dataset] as DatasetScores;
-
-                if (!oldScores && newScores) return true;
-                if (oldScores && !newScores) return true;
-                if (!oldScores && !newScores) continue;
-
-                if (oldScores.accuracy?.value !== newScores.accuracy?.value ||
-                    oldScores.auc?.value !== newScores.auc?.value) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+    private compareData(newData: ModelData[]): boolean {
+        // Compare the new data with cached data to determine if it's different
+        return JSON.stringify(newData) !== JSON.stringify(this.cachedData);
     }
 } 

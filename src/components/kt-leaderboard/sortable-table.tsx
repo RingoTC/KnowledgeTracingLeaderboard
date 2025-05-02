@@ -52,66 +52,68 @@ export function SortableTable({
     };
 
     return (
-        <Table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <TableHeader>
-                <TableRow className="bg-gray-50 dark:bg-gray-800">
-                    <TableHead
-                        className="cursor-pointer relative pr-5 min-w-[120px] text-center font-semibold text-gray-900 dark:text-white"
-                        onClick={() => onSort('model')}
-                    >
-                        Model/Dataset <SortIcon column="model" />
-                    </TableHead>
-                    {metrics.map(metric => (
-                        datasets.map(dataset => (
-                            <TableHead
-                                key={`${dataset}_${metric.key}`}
-                                className="cursor-pointer relative pr-5 min-w-[100px] text-center font-semibold text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                onClick={() => onSort(`${dataset}_${metric.key}`)}
-                            >
-                                {dataset} <SortIcon column={`${dataset}_${metric.key}`} />
-                            </TableHead>
-                        ))
-                    ))}
-                    <TableHead
-                        className="cursor-pointer relative pr-5 min-w-[80px] text-center font-semibold text-gray-900 dark:text-white bg-green-100 dark:bg-green-900/30 sticky right-0 z-10"
-                        onClick={() => onSort('wins')}
-                    >
-                        Win <SortIcon column="wins" />
-                    </TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                {data.map((model, index) => (
-                    <TableRow 
-                        key={model.model}
-                        className={`
-                            transition-colors
-                            ${index % 2 === 0 
-                                ? 'bg-white dark:bg-gray-900' 
-                                : 'bg-gray-50 dark:bg-gray-800'
-                            }
-                            hover:bg-gray-100 dark:hover:bg-gray-700
-                        `}
-                    >
-                        <TableCell className="font-medium text-center text-gray-900 dark:text-white py-4">
-                            {model.model}
-                        </TableCell>
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <Table className="min-w-full">
+                <TableHeader>
+                    <TableRow className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                        <TableHead
+                            className="cursor-pointer relative pr-5 pl-4 min-w-[120px] text-left font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700"
+                            onClick={() => onSort('model')}
+                        >
+                            Model/Dataset <SortIcon column="model" />
+                        </TableHead>
                         {metrics.map(metric => (
                             datasets.map(dataset => (
-                                <TableCell 
-                                    key={`${dataset}_${metric.key}`} 
-                                    className="text-center min-w-[100px] py-4"
+                                <TableHead
+                                    key={`${dataset}_${metric.key}`}
+                                    className="cursor-pointer relative pr-5 pl-4 min-w-[100px] text-left font-semibold text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-r border-gray-200 dark:border-gray-700"
+                                    onClick={() => onSort(`${dataset}_${metric.key}`)}
                                 >
-                                    {renderCell(model, dataset, metric)}
-                                </TableCell>
+                                    {dataset} <SortIcon column={`${dataset}_${metric.key}`} />
+                                </TableHead>
                             ))
                         ))}
-                        <TableCell className="font-medium text-center text-gray-900 dark:text-white py-4 bg-green-100 dark:bg-green-900/30 sticky right-0 z-10">
-                            {calculateWins(model)}
-                        </TableCell>
+                        <TableHead
+                            className="cursor-pointer relative pr-5 pl-4 min-w-[80px] text-left font-semibold text-gray-900 dark:text-white bg-green-100 dark:bg-green-900/30 sticky right-0 z-10 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)]"
+                            onClick={() => onSort('wins')}
+                        >
+                            Win <SortIcon column="wins" />
+                        </TableHead>
                     </TableRow>
-                ))}
-            </TableBody>
-        </Table>
+                </TableHeader>
+                <TableBody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                    {data.map((model, index) => (
+                        <TableRow 
+                            key={model.model}
+                            className={`
+                                transition-colors
+                                ${index % 2 === 0 
+                                    ? 'bg-white dark:bg-gray-900' 
+                                    : 'bg-gray-50 dark:bg-gray-800'
+                                }
+                                hover:bg-gray-100 dark:hover:bg-gray-700
+                            `}
+                        >
+                            <TableCell className="font-medium text-center text-gray-900 dark:text-white py-4 border-r border-gray-200 dark:border-gray-700">
+                                {model.model}
+                            </TableCell>
+                            {metrics.map(metric => (
+                                datasets.map(dataset => (
+                                    <TableCell 
+                                        key={`${dataset}_${metric.key}`} 
+                                        className="text-center min-w-[100px] py-4 border-r border-gray-200 dark:border-gray-700"
+                                    >
+                                        {renderCell(model, dataset, metric)}
+                                    </TableCell>
+                                ))
+                            ))}
+                            <TableCell className="font-medium text-center text-gray-900 dark:text-white py-4 bg-green-100 dark:bg-green-900/30 sticky right-0 z-10 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)]">
+                                {calculateWins(model)}
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
     );
 }

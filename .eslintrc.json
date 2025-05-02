@@ -9,6 +9,9 @@
   "ignorePatterns": [
     ".next/**/*",
     "node_modules/**/*",
-    "out/**/*"
+    "out/**/*",
+    "**/.next/**/*",
+    "**/node_modules/**/*",
+    "**/out/**/*"
   ]
 } 

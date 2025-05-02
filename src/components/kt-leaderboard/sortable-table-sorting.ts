@@ -26,18 +26,12 @@ export function sortModels(
         }
 
         // Sort by dataset and metric
-        const [dataset, metric] = sortColumn.split('_') as [keyof ModelData, "accuracy" | "auc"];
-        const aDataset = a[dataset];
-        const bDataset = b[dataset];
-
-        if (typeof aDataset === 'object' && typeof bDataset === 'object') {
-            const aScore = aDataset[metric]?.value ?? -Infinity;
-            const bScore = bDataset[metric]?.value ?? -Infinity;
-            return sortDirection === 'asc'
-                ? aScore - bScore
-                : bScore - aScore;
-        }
-
-        return 0;
+        const [dataset, metric] = sortColumn.split('_') as [string, "accuracy" | "auc"];
+        const aScore = a.scores[dataset]?.[metric]?.value ?? -Infinity;
+        const bScore = b.scores[dataset]?.[metric]?.value ?? -Infinity;
+        
+        return sortDirection === 'asc'
+            ? aScore - bScore
+            : bScore - aScore;
     });
 }

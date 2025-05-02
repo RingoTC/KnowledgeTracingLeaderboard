@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { SortableTable } from "./sortable-table";
 import { ScoreCell } from "./score-cell";
 import { sortModels } from "./sortable-table-sorting";
@@ -12,155 +12,215 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/@/components/ui/select";
+} from "@/components/ui/select";
+
+// Constants
+const METRICS = [
+  { name: "Accuracy", key: "accuracy" as const },
+  { name: "AUC", key: "auc" as const }
+] as const;
 
 type MetricInfo = {
-    name: string;
-    key: "accuracy" | "auc";
+  name: string;
+  key: "accuracy" | "auc";
 };
 
-export function KTLeaderboard() {
-    const [data, setData] = useState<ModelData[]>([]);
-    const [sortConfig, setSortConfig] = useState<{
-        column: string | null;
-        direction: "asc" | "desc";
-    }>({ column: 'wins', direction: "desc" });
-    
-    const [selectedMetric, setSelectedMetric] = useState<"accuracy" | "auc">("auc");
+interface KTLeaderboardProps {
+  initialData?: ModelData[];
+}
 
-    useEffect(() => {
-        const loadData = async () => {
-            const dataLoader = DataLoader.getInstance();
-            const initialData = await dataLoader.loadData();
-            setData(initialData);
-        };
+// Custom hook for data management
+const useLeaderboardData = (initialData?: ModelData[]) => {
+  const [data, setData] = useState<ModelData[]>(initialData || []);
+  const [selectedMetric, setSelectedMetric] = useState<"accuracy" | "auc">("auc");
 
-        loadData();
-    }, []);
-
-    // Get datasets dynamically from the first model's data
-    const datasets: Dataset[] = data.length > 0 
-        ? Object.keys(data[0]).filter(key => key !== 'model') as Dataset[]
-        : [];
-
-    // Define metrics but only use the selected one in the table
-    const metrics: MetricInfo[] = [
-        { name: "Accuracy", key: "accuracy" },
-        { name: "AUC", key: "auc" }
-    ];
-    
-    // Filter metrics to only include the selected one
-    const selectedMetrics = metrics.filter(metric => metric.key === selectedMetric);
-
-    const handleSort = (column: string) => {
-        setSortConfig((prevConfig) => ({
-            column,
-            direction: prevConfig.column === column && prevConfig.direction === 'desc'
-                ? 'asc'
-                : 'desc',
-        }));
+  useEffect(() => {
+    const loadData = async () => {
+      const dataLoader = DataLoader.getInstance();
+      const newData = await dataLoader.loadData(initialData);
+      setData(newData);
     };
 
-    const getBestScores = () => {
-        const bestScores = new Map<string, number>();
-        const secondBestScores = new Map<string, number>();
+    // Only load data if we don't have initial data from SSR
+    if (!initialData) {
+      loadData();
+    }
+  }, [initialData]);
 
-        datasets.forEach(dataset => {
-            metrics.forEach(metric => {
-                const key = `${dataset}_${metric.key}`;
-                const scores = data
-                    .map(model => model[dataset][metric.key])
-                    .filter((score): score is Score => score !== null)
-                    .map(score => score.value)
-                    .sort((a, b) => b - a);
+  return { data, selectedMetric, setSelectedMetric };
+};
 
-                if (scores.length > 0) {
-                    bestScores.set(key, scores[0]);
-                    if (scores.length > 1) {
-                        secondBestScores.set(key, scores[1]);
-                    }
-                }
-            });
-        });
+// Custom hook for sorting
+const useSorting = (initialColumn = 'wins', initialDirection: "asc" | "desc" = "desc") => {
+  const [sortConfig, setSortConfig] = useState<{
+    column: string | null;
+    direction: "asc" | "desc";
+  }>({ column: initialColumn, direction: initialDirection });
 
-        return { bestScores, secondBestScores };
-    };
+  const handleSort = useCallback((column: string) => {
+    setSortConfig((prevConfig) => ({
+      column,
+      direction: prevConfig.column === column && prevConfig.direction === 'desc'
+        ? 'asc'
+        : 'desc',
+    }));
+  }, []);
 
-    const calculateWins = (model: ModelData) => {
-        let wins = 0;
-        datasets.forEach(dataset => {
-            const score = model[dataset][selectedMetric];
-            if (score) {
-                const scoreKey = `${dataset}_${selectedMetric}`;
-                if (score.value === bestScores.get(scoreKey)) {
-                    wins++;
-                }
-            }
-        });
-        return wins;
-    };
+  return { sortConfig, handleSort };
+};
 
-    const { bestScores, secondBestScores } = getBestScores();
+// Custom hook for score calculations
+const useScoreCalculations = (data: ModelData[], selectedMetric: "accuracy" | "auc") => {
+  const datasets = useMemo(() => 
+    data.length > 0 ? Object.keys(data[0].scores) : [],
+    [data]
+  );
 
-    const renderCell = (model: ModelData, dataset: Dataset, metric: MetricInfo) => {
-        const score = model[dataset][metric.key];
-        if (!score) return <div className="text-center text-gray-400">-</div>;
+  const { bestScores, secondBestScores } = useMemo(() => {
+    const bestScores = new Map<string, number>();
+    const secondBestScores = new Map<string, number>();
 
-        const scoreKey = `${dataset}_${metric.key}`;
-        const isHighest = score.value === bestScores.get(scoreKey);
-        const isSecondHighest = score.value === secondBestScores.get(scoreKey);
+    datasets.forEach(dataset => {
+      METRICS.forEach(metric => {
+        const key = `${dataset}_${metric.key}`;
+        const scores = data
+          .map(model => model.scores[dataset]?.[metric.key])
+          .filter((score): score is Score => score !== null)
+          .map(score => score.value)
+          .sort((a, b) => b - a);
 
-        return (
-            <div className={`
-                text-center
-                ${isHighest ? "font-bold text-green-600 dark:text-green-400" : ""}
-                ${isSecondHighest ? "underline" : ""}
-            `}>
-                <ScoreCell score={score} />
-            </div>
-        );
-    };
-    
-    const sortedData = sortModels(data, sortConfig.column, sortConfig.direction, calculateWins);
+        if (scores.length > 0) {
+          bestScores.set(key, scores[0]);
+          if (scores.length > 1) {
+            secondBestScores.set(key, scores[1]);
+          }
+        }
+      });
+    });
 
-    return (
-        <div className="container mx-auto py-10 px-4">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col items-center gap-2 mb-8">
-                    <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-white">
-                        Knowledge Tracing Leaderboard
-                    </h1>
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span>Metric:</span>
-                        <Select
-                            value={selectedMetric}
-                            onValueChange={(value: "accuracy" | "auc") => setSelectedMetric(value)}
-                        >
-                            <SelectTrigger className="w-[120px]">
-                                <SelectValue placeholder="Select metric" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="auc">AUC</SelectItem>
-                                <SelectItem value="accuracy">Accuracy</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <span className="text-gray-400">•</span>
-                        <span>Click on column headers to sort</span>
-                    </div>
-                </div>
+    return { bestScores, secondBestScores };
+  }, [data, datasets]);
 
-                <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <SortableTable
-                        data={sortedData}
-                        sortConfig={sortConfig}
-                        onSort={handleSort}
-                        datasets={datasets}
-                        metrics={selectedMetrics}
-                        renderCell={renderCell}
-                        calculateWins={calculateWins}
-                    />
-                </div>
-            </div>
+  const calculateWins = useCallback((model: ModelData) => {
+    let wins = 0;
+    datasets.forEach(dataset => {
+      const datasetScores = model.scores[dataset];
+      if (!datasetScores) return;
+      
+      const score = datasetScores[selectedMetric];
+      if (score) {
+        const scoreKey = `${dataset}_${selectedMetric}`;
+        if (score.value === bestScores.get(scoreKey)) {
+          wins++;
+        }
+      }
+    });
+    return wins;
+  }, [datasets, selectedMetric, bestScores]);
+
+  return { datasets, bestScores, secondBestScores, calculateWins };
+};
+
+// Cell renderer component
+const ScoreCellRenderer = ({ 
+  model, 
+  dataset, 
+  metric, 
+  bestScores, 
+  secondBestScores 
+}: { 
+  model: ModelData;
+  dataset: Dataset;
+  metric: MetricInfo;
+  bestScores: Map<string, number>;
+  secondBestScores: Map<string, number>;
+}) => {
+  const datasetScores = model.scores[dataset];
+  if (!datasetScores) return <div className="text-center text-gray-400">-</div>;
+  
+  const score = datasetScores[metric.key];
+  if (!score) return <div className="text-center text-gray-400">-</div>;
+
+  const scoreKey = `${dataset}_${metric.key}`;
+  const isHighest = score.value === bestScores.get(scoreKey);
+  const isSecondHighest = score.value === secondBestScores.get(scoreKey);
+
+  return (
+    <div className={`
+      text-center
+      ${isHighest ? "font-bold text-green-600 dark:text-green-400" : ""}
+      ${isSecondHighest ? "underline" : ""}
+    `}>
+      <ScoreCell score={score} />
+    </div>
+  );
+};
+
+export function KTLeaderboard({ initialData }: KTLeaderboardProps) {
+  const { data, selectedMetric, setSelectedMetric } = useLeaderboardData(initialData);
+  const { sortConfig, handleSort } = useSorting();
+  const { datasets, bestScores, secondBestScores, calculateWins } = useScoreCalculations(data, selectedMetric);
+
+  const selectedMetrics = useMemo(() => 
+    METRICS.filter(metric => metric.key === selectedMetric).map(metric => ({
+      name: metric.name,
+      key: metric.key
+    } as MetricInfo)),
+    [selectedMetric]
+  );
+
+  const sortedData = useMemo(() => 
+    sortModels(data, sortConfig.column, sortConfig.direction, calculateWins),
+    [data, sortConfig, calculateWins]
+  );
+
+  const renderCell = useCallback((model: ModelData, dataset: Dataset, metric: MetricInfo) => (
+    <ScoreCellRenderer
+      model={model}
+      dataset={dataset}
+      metric={metric}
+      bestScores={bestScores}
+      secondBestScores={secondBestScores}
+    />
+  ), [bestScores, secondBestScores]);
+
+  return (
+    <div className="container mx-auto px-2">
+      <div className="mb-12 text-center">
+        <h1 className="text-3xl font-bold mb-4">
+          <span className="mr-2">💯</span>
+          Knowledge Tracing Leaderboard
+        </h1>
+        <div className="flex items-center justify-center gap-4">
+          <p className="text-gray-600 dark:text-gray-400">
+            Compare model performance across different datasets and metrics
+          </p>
+          <Select
+            value={selectedMetric}
+            onValueChange={(value: "accuracy" | "auc") => setSelectedMetric(value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select metric" />
+            </SelectTrigger>
+            <SelectContent>
+              {METRICS.map(metric => (
+                <SelectItem key={metric.key} value={metric.key}>
+                  {metric.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-    );
+      </div>
+      <SortableTable
+        data={sortedData}
+        sortConfig={sortConfig}
+        onSort={handleSort}
+        datasets={datasets}
+        metrics={selectedMetrics}
+        renderCell={renderCell}
+        calculateWins={calculateWins}
+      />
+    </div>
+  );
 }

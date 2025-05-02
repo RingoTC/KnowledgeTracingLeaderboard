@@ -148,12 +148,9 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
 
     // Convert AUC rows to objects
     const aucData = convertRowsToObjects(aucRows);
-    console.log(`AUC data loaded from sheet: ${aucSheetName}`);
-    console.log('First row of AUC data:', aucData[0]);
 
     // Get all dataset names from AUC data (excluding Model column)
     const datasetNames = Object.keys(aucData[0]).filter(key => key !== 'Model');
-    console.log('Available datasets:', datasetNames);
 
     // Initialize processed data with AUC values
     const processedData: ModelData[] = aucData.map((item: BenchmarkData) => {
@@ -179,14 +176,11 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
 
     // If we have an ACC sheet, add accuracy data
     if (accSheetName) {
-      console.log(`Found ACC sheet: ${accSheetName}, loading accuracy data...`);
-
       // Get ACC data
       const accRows = await getSheetData(auth, spreadsheetId, accSheetName);
       if (accRows && accRows.length > 0) {
         // Convert ACC rows to objects
         const accData = convertRowsToObjects(accRows);
-        console.log('First row of ACC data:', accData[0]);
 
         // Add accuracy data to processed data
         accData.forEach((accItem: BenchmarkData) => {
@@ -206,11 +200,7 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
             });
           }
         });
-      } else {
-        console.log(`No data found in the ACC sheet: ${accSheetName}`);
       }
-    } else {
-      console.log('No ACC sheet found, accuracy data will be null');
     }
 
     // Use current time as the last updated time

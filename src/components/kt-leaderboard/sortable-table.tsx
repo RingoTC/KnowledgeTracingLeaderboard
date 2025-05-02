@@ -9,11 +9,6 @@ import {
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Dataset, ModelData } from "@/types";
 
-type DatasetInfo = {
-    name: string;
-    key: Dataset;
-};
-
 type MetricInfo = {
     name: string;
     key: "accuracy" | "auc";
@@ -26,9 +21,10 @@ type SortableTableProps = {
         direction: "asc" | "desc";
     };
     onSort: (column: string) => void;
-    datasets: DatasetInfo[];
+    datasets: Dataset[];
     metrics: MetricInfo[];
     renderCell: (model: ModelData, dataset: Dataset, metric: MetricInfo) => React.ReactNode;
+    calculateWins: (model: ModelData) => number;
 };
 
 export function SortableTable({
@@ -37,7 +33,8 @@ export function SortableTable({
     onSort,
     datasets,
     metrics,
-    renderCell
+    renderCell,
+    calculateWins
 }: SortableTableProps) {
     const SortIcon = ({ column }: { column: string }) => {
         if (sortConfig.column !== column) {
@@ -67,14 +64,20 @@ export function SortableTable({
                     {metrics.map(metric => (
                         datasets.map(dataset => (
                             <TableHead
-                                key={`${dataset.key}_${metric.key}`}
+                                key={`${dataset}_${metric.key}`}
                                 className="cursor-pointer relative pr-5 min-w-[100px] text-center font-semibold text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                onClick={() => onSort(`${dataset.key}_${metric.key}`)}
+                                onClick={() => onSort(`${dataset}_${metric.key}`)}
                             >
-                                {dataset.name} <SortIcon column={`${dataset.key}_${metric.key}`} />
+                                {dataset} <SortIcon column={`${dataset}_${metric.key}`} />
                             </TableHead>
                         ))
                     ))}
+                    <TableHead
+                        className="cursor-pointer relative pr-5 min-w-[80px] text-center font-semibold text-gray-900 dark:text-white bg-green-50 dark:bg-green-900/20 sticky right-0 z-10"
+                        onClick={() => onSort('wins')}
+                    >
+                        Win <SortIcon column="wins" />
+                    </TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
@@ -96,13 +99,16 @@ export function SortableTable({
                         {metrics.map(metric => (
                             datasets.map(dataset => (
                                 <TableCell 
-                                    key={`${dataset.key}_${metric.key}`} 
+                                    key={`${dataset}_${metric.key}`} 
                                     className="text-center min-w-[100px] py-4"
                                 >
-                                    {renderCell(model, dataset.key, metric)}
+                                    {renderCell(model, dataset, metric)}
                                 </TableCell>
                             ))
                         ))}
+                        <TableCell className="font-medium text-center text-gray-900 dark:text-white py-4 bg-green-50 dark:bg-green-900/20 sticky right-0 z-10">
+                            {calculateWins(model)}
+                        </TableCell>
                     </TableRow>
                 ))}
             </TableBody>

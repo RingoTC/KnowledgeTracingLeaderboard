@@ -3,7 +3,8 @@ import { ModelData } from "@/types";
 export function sortModels(
     data: ModelData[],
     sortColumn: string | null,
-    sortDirection: "asc" | "desc"
+    sortDirection: "asc" | "desc",
+    calculateWins: (model: ModelData) => number
 ): ModelData[] {
     if (!sortColumn) return data;
 
@@ -13,6 +14,15 @@ export function sortModels(
             return sortDirection === 'asc'
                 ? a.model.localeCompare(b.model)
                 : b.model.localeCompare(a.model);
+        }
+
+        // Sort by wins
+        if (sortColumn === 'wins') {
+            const aWins = calculateWins(a);
+            const bWins = calculateWins(b);
+            return sortDirection === 'asc'
+                ? aWins - bWins
+                : bWins - aWins;
         }
 
         // Sort by dataset and metric

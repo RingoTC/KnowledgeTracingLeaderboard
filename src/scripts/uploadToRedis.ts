@@ -42,32 +42,34 @@ async function uploadToRedis() {
     console.log('Reading file from:', filePath);
     const workbook = XLSX.readFile(filePath);
     
-    // 获取第一个工作表
-    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    // 获取ACC和AUC工作表
+    const accWorksheet = workbook.Sheets['ACC'];
+    const aucWorksheet = workbook.Sheets['AUC'];
     
     // 将工作表转换为JSON
-    const data = XLSX.utils.sheet_to_json<BenchmarkData>(worksheet);
+    const accData = XLSX.utils.sheet_to_json<BenchmarkData>(accWorksheet);
+    const aucData = XLSX.utils.sheet_to_json<BenchmarkData>(aucWorksheet);
 
     // 获取所有数据集名称（排除Model列）
-    const datasetNames = Object.keys(data[0]).filter(key => key !== 'Model');
+    const datasetNames = Object.keys(accData[0]).filter(key => key !== 'Model');
     console.log('Dataset names:', datasetNames);
 
     // 处理数据
-    const processedData = data.map(item => {
-      const modelName = item.Model.trim();
+    const processedData = accData.map((accItem, index) => {
+      const modelName = accItem.Model.trim();
+      const aucItem = aucData[index];
       const modelData: any = { model: modelName };
 
       // 为每个数据集创建结构
       datasetNames.forEach(dataset => {
-        const score = item[dataset];
-        if (typeof score === 'string') {
-          const parsedScore = parseScoreString(score);
-          const normalizedDataset = normalizeDatasetName(dataset);
-          modelData[normalizedDataset] = {
-            accuracy: parsedScore,
-            auc: parsedScore // 这里假设每个数据集都有相同的accuracy和auc值
-          };
-        }
+        const accScore = accItem[dataset];
+        const aucScore = aucItem[dataset];
+        const normalizedDataset = normalizeDatasetName(dataset);
+        
+        modelData[normalizedDataset] = {
+          accuracy: typeof accScore === 'string' ? parseScoreString(accScore) : null,
+          auc: typeof aucScore === 'string' ? parseScoreString(aucScore) : null
+        };
       });
 
       return modelData;

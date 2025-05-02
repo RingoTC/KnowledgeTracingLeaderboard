@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SortableTable } from "./sortable-table";
 import { ScoreCell } from "./score-cell";
 import { sortModels } from "./sortable-table-sorting";
 import { Dataset, ModelData, Score } from "@/types";
+import { DataLoader } from "./data-loader";
 import {
   Select,
   SelectContent,
@@ -13,40 +14,34 @@ import {
   SelectValue,
 } from "@/@/components/ui/select";
 
-type DatasetInfo = {
-    name: string;
-    key: Dataset;
-};
-
 type MetricInfo = {
     name: string;
     key: "accuracy" | "auc";
 };
 
-type KTLeaderboardProps = {
-    data: ModelData[];
-};
-
-export function KTLeaderboard({ data }: KTLeaderboardProps) {
+export function KTLeaderboard() {
+    const [data, setData] = useState<ModelData[]>([]);
     const [sortConfig, setSortConfig] = useState<{
         column: string | null;
         direction: "asc" | "desc";
-    }>({ column: 'assist2009_auc', direction: "desc" });
+    }>({ column: 'wins', direction: "desc" });
     
     const [selectedMetric, setSelectedMetric] = useState<"accuracy" | "auc">("auc");
 
-    const datasets: DatasetInfo[] = [
-        { name: "ASSIST2009", key: "assist2009" },
-        { name: "Algebra2005", key: "algebra2005" },
-        { name: "Bridge2006", key: "bridge2006" },
-        { name: "NIPS34", key: "nips34" },
-        { name: "XES3G5M", key: "xes3g5m" },
-        { name: "EdNet-small", key: "ednet_small" },
-        { name: "EdNet-large", key: "ednet_large" },
-        { name: "Statics2011", key: "statics2011" },
-        { name: "ASSIST2015", key: "assist2015" },
-        { name: "POJ", key: "poj" }
-    ];
+    useEffect(() => {
+        const loadData = async () => {
+            const dataLoader = DataLoader.getInstance();
+            const initialData = await dataLoader.loadData();
+            setData(initialData);
+        };
+
+        loadData();
+    }, []);
+
+    // Get datasets dynamically from the first model's data
+    const datasets: Dataset[] = data.length > 0 
+        ? Object.keys(data[0]).filter(key => key !== 'model') as Dataset[]
+        : [];
 
     // Define metrics but only use the selected one in the table
     const metrics: MetricInfo[] = [
@@ -72,9 +67,9 @@ export function KTLeaderboard({ data }: KTLeaderboardProps) {
 
         datasets.forEach(dataset => {
             metrics.forEach(metric => {
-                const key = `${dataset.key}_${metric.key}`;
+                const key = `${dataset}_${metric.key}`;
                 const scores = data
-                    .map(model => model[dataset.key][metric.key])
+                    .map(model => model[dataset][metric.key])
                     .filter((score): score is Score => score !== null)
                     .map(score => score.value)
                     .sort((a, b) => b - a);
@@ -89,6 +84,20 @@ export function KTLeaderboard({ data }: KTLeaderboardProps) {
         });
 
         return { bestScores, secondBestScores };
+    };
+
+    const calculateWins = (model: ModelData) => {
+        let wins = 0;
+        datasets.forEach(dataset => {
+            const score = model[dataset][selectedMetric];
+            if (score) {
+                const scoreKey = `${dataset}_${selectedMetric}`;
+                if (score.value === bestScores.get(scoreKey)) {
+                    wins++;
+                }
+            }
+        });
+        return wins;
     };
 
     const { bestScores, secondBestScores } = getBestScores();
@@ -112,7 +121,7 @@ export function KTLeaderboard({ data }: KTLeaderboardProps) {
         );
     };
     
-    const sortedData = sortModels(data, sortConfig.column, sortConfig.direction);
+    const sortedData = sortModels(data, sortConfig.column, sortConfig.direction, calculateWins);
 
     return (
         <div className="container mx-auto py-10 px-4">
@@ -148,6 +157,7 @@ export function KTLeaderboard({ data }: KTLeaderboardProps) {
                         datasets={datasets}
                         metrics={selectedMetrics}
                         renderCell={renderCell}
+                        calculateWins={calculateWins}
                     />
                 </div>
             </div>

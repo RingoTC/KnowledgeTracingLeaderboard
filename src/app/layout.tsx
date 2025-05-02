@@ -19,10 +19,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <GoogleAnalytics />
-      </head>
       <body className={inter.className}>
+        <GoogleAnalytics />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

@@ -122,47 +122,99 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
       throw new Error('No sheets found in the spreadsheet');
     }
 
-    // Use the first sheet
-    const sheetName = sheetNames[0];
+    // Find AUC and ACC sheets
+    let aucSheetName = '';
+    let accSheetName = '';
 
-    // Get sheet data
-    const rows = await getSheetData(auth, spreadsheetId, `${sheetName}`);
-
-    if (!rows || rows.length === 0) {
-      throw new Error('No data found in the spreadsheet');
+    // Look for sheets with AUC or ACC in their names
+    for (const name of sheetNames) {
+      if (name.includes('AUC')) {
+        aucSheetName = name;
+      } else if (name.includes('ACC')) {
+        accSheetName = name;
+      }
     }
 
-    // Use current time as the last updated time
-    const lastModified = getCurrentTimeAsISOString();
+    // If we didn't find specific sheets, use the first sheet for AUC (for backward compatibility)
+    if (!aucSheetName) {
+      aucSheetName = sheetNames[0];
+    }
 
-    // Convert rows to objects
-    const data = convertRowsToObjects(rows);
+    // Get AUC data
+    const aucRows = await getSheetData(auth, spreadsheetId, aucSheetName);
+    if (!aucRows || aucRows.length === 0) {
+      throw new Error(`No data found in the AUC sheet: ${aucSheetName}`);
+    }
 
-    // Get all dataset names (excluding Model column)
-    const datasetNames = Object.keys(data[0]).filter(key => key !== 'Model');
+    // Convert AUC rows to objects
+    const aucData = convertRowsToObjects(aucRows);
+    console.log(`AUC data loaded from sheet: ${aucSheetName}`);
+    console.log('First row of AUC data:', aucData[0]);
 
-    // Process data
-    const processedData: ModelData[] = data.map((item: BenchmarkData) => {
+    // Get all dataset names from AUC data (excluding Model column)
+    const datasetNames = Object.keys(aucData[0]).filter(key => key !== 'Model');
+    console.log('Available datasets:', datasetNames);
+
+    // Initialize processed data with AUC values
+    const processedData: ModelData[] = aucData.map((item: BenchmarkData) => {
       const modelName = item.Model.toString().trim();
       const modelData: ModelData = {
         model: modelName,
         scores: {} as Record<string, DatasetScores>
       };
 
-      // Create structure for each dataset
+      // Add AUC scores for each dataset
       datasetNames.forEach(dataset => {
         const score = item[dataset];
         const normalizedDataset = normalizeDatasetName(dataset);
 
-        // Assume all values are AUC values
         modelData.scores[normalizedDataset] = {
-          accuracy: null, // No accuracy data
+          accuracy: null, // Will be populated later if ACC sheet exists
           auc: parseScoreString(score)
         };
       });
 
       return modelData;
     });
+
+    // If we have an ACC sheet, add accuracy data
+    if (accSheetName) {
+      console.log(`Found ACC sheet: ${accSheetName}, loading accuracy data...`);
+
+      // Get ACC data
+      const accRows = await getSheetData(auth, spreadsheetId, accSheetName);
+      if (accRows && accRows.length > 0) {
+        // Convert ACC rows to objects
+        const accData = convertRowsToObjects(accRows);
+        console.log('First row of ACC data:', accData[0]);
+
+        // Add accuracy data to processed data
+        accData.forEach((accItem: BenchmarkData) => {
+          const modelName = accItem.Model.toString().trim();
+
+          // Find the corresponding model in processed data
+          const modelData = processedData.find(item => item.model === modelName);
+          if (modelData) {
+            // Add accuracy scores for each dataset
+            datasetNames.forEach(dataset => {
+              const score = accItem[dataset];
+              const normalizedDataset = normalizeDatasetName(dataset);
+
+              if (modelData.scores[normalizedDataset]) {
+                modelData.scores[normalizedDataset].accuracy = parseScoreString(score);
+              }
+            });
+          }
+        });
+      } else {
+        console.log(`No data found in the ACC sheet: ${accSheetName}`);
+      }
+    } else {
+      console.log('No ACC sheet found, accuracy data will be null');
+    }
+
+    // Use current time as the last updated time
+    const lastModified = getCurrentTimeAsISOString();
 
     return {
       models: processedData,

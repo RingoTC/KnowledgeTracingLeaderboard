@@ -1,4 +1,6 @@
 import { google } from 'googleapis';
+import { GoogleAuth, OAuth2Client } from 'google-auth-library';
+import { sheets_v4 } from 'googleapis';
 import { ModelData, Score, DatasetScores } from '@/types';
 
 // Helper functions
@@ -51,7 +53,7 @@ async function authorize() {
 /**
  * Get all sheet names from a Google Spreadsheet
  */
-async function getSheetNames(auth: any, spreadsheetId: string): Promise<string[]> {
+async function getSheetNames(auth: GoogleAuth | OAuth2Client, spreadsheetId: string): Promise<string[]> {
   const sheets = google.sheets({ version: 'v4', auth });
   const response = await sheets.spreadsheets.get({
     spreadsheetId,
@@ -62,7 +64,7 @@ async function getSheetNames(auth: any, spreadsheetId: string): Promise<string[]
 /**
  * Get data from a specific sheet in a Google Spreadsheet
  */
-async function getSheetData(auth: any, spreadsheetId: string, range: string): Promise<any[][]> {
+async function getSheetData(auth: GoogleAuth | OAuth2Client, spreadsheetId: string, range: string): Promise<sheets_v4.Schema$ValueRange['values']> {
   const sheets = google.sheets({ version: 'v4', auth });
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
@@ -74,7 +76,7 @@ async function getSheetData(auth: any, spreadsheetId: string, range: string): Pr
 /**
  * Convert row data to objects with headers as keys
  */
-function convertRowsToObjects(rows: any[][]): BenchmarkData[] {
+function convertRowsToObjects(rows: sheets_v4.Schema$ValueRange['values']): BenchmarkData[] {
   if (!rows || rows.length === 0) {
     return [];
   }
@@ -96,37 +98,37 @@ export async function fetchLeaderboardData(): Promise<ModelData[]> {
   try {
     // Get spreadsheet ID from environment variable
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
-    
+
     if (!spreadsheetId) {
       throw new Error('Google Spreadsheet ID not found in environment variables');
     }
 
     // Authorize with Google Sheets API
     const auth = await authorize();
-    
+
     // Get all sheet names
     const sheetNames = await getSheetNames(auth, spreadsheetId);
-    
+
     if (sheetNames.length === 0) {
       throw new Error('No sheets found in the spreadsheet');
     }
-    
+
     // Use the first sheet
     const sheetName = sheetNames[0];
-    
+
     // Get sheet data
     const rows = await getSheetData(auth, spreadsheetId, `${sheetName}`);
-    
-    if (rows.length === 0) {
+
+    if (!rows || rows.length === 0) {
       throw new Error('No data found in the spreadsheet');
     }
-    
+
     // Convert rows to objects
     const data = convertRowsToObjects(rows);
-    
+
     // Get all dataset names (excluding Model column)
     const datasetNames = Object.keys(data[0]).filter(key => key !== 'Model');
-    
+
     // Process data
     const processedData: ModelData[] = data.map((item: BenchmarkData) => {
       const modelName = item.Model.toString().trim();
@@ -134,22 +136,22 @@ export async function fetchLeaderboardData(): Promise<ModelData[]> {
         model: modelName,
         scores: {} as Record<string, DatasetScores>
       };
-      
+
       // Create structure for each dataset
       datasetNames.forEach(dataset => {
         const score = item[dataset];
         const normalizedDataset = normalizeDatasetName(dataset);
-        
+
         // Assume all values are AUC values
         modelData.scores[normalizedDataset] = {
           accuracy: null, // No accuracy data
           auc: parseScoreString(score)
         };
       });
-      
+
       return modelData;
     });
-    
+
     return processedData;
   } catch (error) {
     console.error('Error fetching leaderboard data from Google Sheets:', error);

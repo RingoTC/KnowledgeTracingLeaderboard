@@ -23,6 +23,13 @@ export default function AboutPage() {
           <p className="leading-relaxed">
             You can refer their work by Github: <a className="text-blue-500 hover:underline" href="https://github.com/pykt-team/pykt-toolkit" target="_blank" rel="noopener noreferrer">pykt-toolkit</a>
           </p>
+          <p className="leading-relaxed">
+            If you have any questions, please contact us by email: <a className="text-blue-500 hover:underline" href="#" target="_blank" rel="noopener noreferrer">ringotc#outlook.com</a>
+
+            Also, you can discuss in Github Issues: <a className="text-blue-500 hover:underline" href="https://github.com/RingoTC/KnowledgeTracingLeaderboard/issues" target="_blank" rel="noopener noreferrer">KnowledgeTracingLeaderboard/issues</a>. 
+            
+            You are welcome to fork this leaderboard for scientific research.
+          </p>
         </div>
       </section>
 

@@ -3,9 +3,13 @@
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 export function Navbar() {
   const { theme, setTheme } = useTheme();
+  const pathname = usePathname();
+
+  const isActive = (path: string) => pathname === path;
 
   return (
     <nav className="border-b">
@@ -17,13 +21,28 @@ export function Navbar() {
             </Link>
             <div className="hidden md:block ml-10">
               <div className="flex items-baseline space-x-4">
-                <Link href="/" className="px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                <Link 
+                  href="/" 
+                  className={`px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                    isActive("/") ? "bg-gray-100 dark:bg-gray-800 font-medium" : ""
+                  }`}
+                >
                   Leaderboard
                 </Link>
-                <Link href="/about" className="px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                <Link 
+                  href="/about" 
+                  className={`px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                    isActive("/about") ? "bg-gray-100 dark:bg-gray-800 font-medium" : ""
+                  }`}
+                >
                   About
                 </Link>
-                <Link href="/submit" className="px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                <Link 
+                  href="/submit" 
+                  className={`px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                    isActive("/submit") ? "bg-gray-100 dark:bg-gray-800 font-medium" : ""
+                  }`}
+                >
                   Submit
                 </Link>
               </div>

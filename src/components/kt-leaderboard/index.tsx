@@ -185,7 +185,7 @@ export function KTLeaderboard({ initialData }: KTLeaderboardProps) {
   ), [bestScores, secondBestScores]);
 
   return (
-    <div className="container mx-auto px-2">
+    <div className="space-y-6">
       <div className="mb-12 text-center">
         <h1 className="text-3xl font-bold mb-4">
           <span className="mr-2">💯</span>

@@ -5,14 +5,13 @@ export default function AboutPage() {
     <div className="space-y-6">
       <section>
         <h1 className="text-3xl font-bold mb-6">
-          About Knowledge Tracing
+          About Knowledge Tracing Benchmark
         </h1>
         <div className="rounded-md border bg-card p-6">
           <p className="mb-4">
-            Knowledge Tracing (KT) is the task of using students&apos; historical learning interaction data to model their knowledge mastery over time so as to make predictions on their future interaction performance. Such predictive capabilities can potentially help students learn better and faster when paired with high-quality learning materials and instructions.
-          </p>
-          <p>
-            The KT problem has been studied since the 1990s, with various approaches ranging from probabilistic graphical models to modern deep learning techniques. The goal is to accurately track and predict students&apos; knowledge states as they progress through learning materials.
+            This benchmark is inspired by the pykt-toolkit (Liu et al., 2022). We directly use the results from their publication. For new models, we will update the results here. According to their paper, the results are obtained by using the &quot;All In One&quot; protocol and previous One by One protocol will faced with the problem of data leakage.
+
+            You can refer their work by Github: <a className="text-blue-500" href="https://github.com/pykt-team/pykt-toolkit" target="_blank" rel="noopener noreferrer">pykt-toolkit</a>
           </p>
         </div>
       </section>
@@ -84,13 +83,13 @@ export default function AboutPage() {
             If you use this leaderboard or the evaluation framework in your research, please cite:
           </p>
           <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">
-            @article&#123;liu2025deep,<br />
-            &nbsp;&nbsp;title=&#123;Deep Learning Based Knowledge Tracing: A Review, A Tool and Empirical Studies&#125;,<br />
-            &nbsp;&nbsp;author=&#123;Liu, Zitao and Guo, Teng and Liang, Qianru and Hou, Mingliang and Zhan, Bojun and Tang, Jiliang and Luo, Weiqi and Weng, Jian&#125;,<br />
-            &nbsp;&nbsp;journal=&#123;IEEE Transactions on Knowledge and Data Engineering&#125;,<br />
-            &nbsp;&nbsp;year=&#123;2025&#125;,<br />
-            &nbsp;&nbsp;publisher=&#123;IEEE&#125;<br />
-            &#125;
+            {`@article{liu2025deep,
+  title={Deep Learning Based Knowledge Tracing: A Review, A Tool and Empirical Studies},
+  author={Liu, Zitao and Guo, Teng and Liang, Qianru and Hou, Mingliang and Zhan, Bojun and Tang, Jiliang and Luo, Weiqi and Weng, Jian},
+  journal={IEEE Transactions on Knowledge and Data Engineering},
+  year={2025},
+  publisher={IEEE}
+}`}
           </pre>
         </div>
       </section>

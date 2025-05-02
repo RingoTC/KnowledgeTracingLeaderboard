@@ -73,7 +73,7 @@ export function SortableTable({
                         ))
                     ))}
                     <TableHead
-                        className="cursor-pointer relative pr-5 min-w-[80px] text-center font-semibold text-gray-900 dark:text-white bg-green-50 dark:bg-green-900/20 sticky right-0 z-10"
+                        className="cursor-pointer relative pr-5 min-w-[80px] text-center font-semibold text-gray-900 dark:text-white bg-green-100 dark:bg-green-900/30 sticky right-0 z-10"
                         onClick={() => onSort('wins')}
                     >
                         Win <SortIcon column="wins" />
@@ -106,7 +106,7 @@ export function SortableTable({
                                 </TableCell>
                             ))
                         ))}
-                        <TableCell className="font-medium text-center text-gray-900 dark:text-white py-4 bg-green-50 dark:bg-green-900/20 sticky right-0 z-10">
+                        <TableCell className="font-medium text-center text-gray-900 dark:text-white py-4 bg-green-100 dark:bg-green-900/30 sticky right-0 z-10">
                             {calculateWins(model)}
                         </TableCell>
                     </TableRow>

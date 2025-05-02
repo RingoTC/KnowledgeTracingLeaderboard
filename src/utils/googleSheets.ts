@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import { GoogleAuth, OAuth2Client } from 'google-auth-library';
 import { sheets_v4 } from 'googleapis';
-import { ModelData, Score, DatasetScores } from '@/types';
+import { ModelData, Score, DatasetScores, LeaderboardData } from '@/types';
 
 // Helper functions
 function parseScoreString(str: string | number): Score | null {
@@ -62,6 +62,15 @@ async function getSheetNames(auth: GoogleAuth | OAuth2Client, spreadsheetId: str
 }
 
 /**
+ * Get the current time as ISO string to use as last updated time
+ * Since we can't directly get the last modified time from the Sheets API without additional permissions,
+ * we'll use the current time when the data was fetched as an approximation
+ */
+function getCurrentTimeAsISOString(): string {
+  return new Date().toISOString();
+}
+
+/**
  * Get data from a specific sheet in a Google Spreadsheet
  */
 async function getSheetData(auth: GoogleAuth | OAuth2Client, spreadsheetId: string, range: string): Promise<sheets_v4.Schema$ValueRange['values']> {
@@ -94,7 +103,7 @@ function convertRowsToObjects(rows: sheets_v4.Schema$ValueRange['values']): Benc
 /**
  * Fetch leaderboard data directly from Google Sheets
  */
-export async function fetchLeaderboardData(): Promise<ModelData[]> {
+export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   try {
     // Get spreadsheet ID from environment variable
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
@@ -122,6 +131,9 @@ export async function fetchLeaderboardData(): Promise<ModelData[]> {
     if (!rows || rows.length === 0) {
       throw new Error('No data found in the spreadsheet');
     }
+
+    // Use current time as the last updated time
+    const lastModified = getCurrentTimeAsISOString();
 
     // Convert rows to objects
     const data = convertRowsToObjects(rows);
@@ -152,9 +164,12 @@ export async function fetchLeaderboardData(): Promise<ModelData[]> {
       return modelData;
     });
 
-    return processedData;
+    return {
+      models: processedData,
+      lastUpdated: lastModified
+    };
   } catch (error) {
     console.error('Error fetching leaderboard data from Google Sheets:', error);
-    return [];
+    return { models: [] };
   }
 }

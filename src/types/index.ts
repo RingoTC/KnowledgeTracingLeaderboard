@@ -17,6 +17,11 @@ export type ModelData = {
     };
 };
 
+export type LeaderboardData = {
+    models: ModelData[];
+    lastUpdated?: string; // ISO string of the last update time
+};
+
 export type SortConfig = {
     column: string | null;
     direction: "asc" | "desc";

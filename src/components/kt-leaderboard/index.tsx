@@ -4,8 +4,9 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { SortableTable } from "./sortable-table";
 import { ScoreCell } from "./score-cell";
 import { sortModels } from "./sortable-table-sorting";
-import { Dataset, ModelData, Score } from "@/types";
+import { Dataset, ModelData, Score, LeaderboardData } from "@/types";
 import { DataLoader } from "./data-loader";
+import { Footnote } from "./footnote";
 import {
   Select,
   SelectContent,
@@ -26,18 +27,20 @@ type MetricInfo = {
 };
 
 interface KTLeaderboardProps {
-  initialData?: ModelData[];
+  initialData?: LeaderboardData;
 }
 
 // Custom hook for data management
-const useLeaderboardData = (initialData?: ModelData[]) => {
-  const [data, setData] = useState<ModelData[]>(initialData || []);
+const useLeaderboardData = (initialData?: LeaderboardData) => {
+  const [data, setData] = useState<ModelData[]>(initialData?.models || []);
+  // Use only the state value without the setter since we don't need to update it
+  const [lastUpdated] = useState<string | undefined>(initialData?.lastUpdated);
   const [selectedMetric, setSelectedMetric] = useState<"accuracy" | "auc">("auc");
 
   useEffect(() => {
     const loadData = async () => {
       const dataLoader = DataLoader.getInstance();
-      const newData = await dataLoader.loadData(initialData);
+      const newData = await dataLoader.loadData(initialData?.models);
       setData(newData);
     };
 
@@ -47,7 +50,7 @@ const useLeaderboardData = (initialData?: ModelData[]) => {
     }
   }, [initialData]);
 
-  return { data, selectedMetric, setSelectedMetric };
+  return { data, lastUpdated, selectedMetric, setSelectedMetric };
 };
 
 // Custom hook for sorting
@@ -71,7 +74,7 @@ const useSorting = (initialColumn = 'wins', initialDirection: "asc" | "desc" = "
 
 // Custom hook for score calculations
 const useScoreCalculations = (data: ModelData[], selectedMetric: "accuracy" | "auc") => {
-  const datasets = useMemo(() => 
+  const datasets = useMemo(() =>
     data.length > 0 ? Object.keys(data[0].scores) : [],
     [data]
   );
@@ -106,7 +109,7 @@ const useScoreCalculations = (data: ModelData[], selectedMetric: "accuracy" | "a
     datasets.forEach(dataset => {
       const datasetScores = model.scores[dataset];
       if (!datasetScores) return;
-      
+
       const score = datasetScores[selectedMetric];
       if (score) {
         const scoreKey = `${dataset}_${selectedMetric}`;
@@ -122,13 +125,13 @@ const useScoreCalculations = (data: ModelData[], selectedMetric: "accuracy" | "a
 };
 
 // Cell renderer component
-const ScoreCellRenderer = ({ 
-  model, 
-  dataset, 
-  metric, 
-  bestScores, 
-  secondBestScores 
-}: { 
+const ScoreCellRenderer = ({
+  model,
+  dataset,
+  metric,
+  bestScores,
+  secondBestScores
+}: {
   model: ModelData;
   dataset: Dataset;
   metric: MetricInfo;
@@ -137,7 +140,7 @@ const ScoreCellRenderer = ({
 }) => {
   const datasetScores = model.scores[dataset];
   if (!datasetScores) return <div className="text-center text-gray-400">-</div>;
-  
+
   const score = datasetScores[metric.key];
   if (!score) return <div className="text-center text-gray-400">-</div>;
 
@@ -157,11 +160,11 @@ const ScoreCellRenderer = ({
 };
 
 export function KTLeaderboard({ initialData }: KTLeaderboardProps) {
-  const { data, selectedMetric, setSelectedMetric } = useLeaderboardData(initialData);
+  const { data, lastUpdated, selectedMetric, setSelectedMetric } = useLeaderboardData(initialData);
   const { sortConfig, handleSort } = useSorting();
   const { datasets, bestScores, secondBestScores, calculateWins } = useScoreCalculations(data, selectedMetric);
 
-  const selectedMetrics = useMemo(() => 
+  const selectedMetrics = useMemo(() =>
     METRICS.filter(metric => metric.key === selectedMetric).map(metric => ({
       name: metric.name,
       key: metric.key
@@ -169,7 +172,7 @@ export function KTLeaderboard({ initialData }: KTLeaderboardProps) {
     [selectedMetric]
   );
 
-  const sortedData = useMemo(() => 
+  const sortedData = useMemo(() =>
     sortModels(data, sortConfig.column, sortConfig.direction, calculateWins),
     [data, sortConfig, calculateWins]
   );
@@ -221,6 +224,7 @@ export function KTLeaderboard({ initialData }: KTLeaderboardProps) {
         renderCell={renderCell}
         calculateWins={calculateWins}
       />
+      <Footnote lastUpdated={lastUpdated} />
     </div>
   );
 }

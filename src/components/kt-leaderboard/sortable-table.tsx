@@ -114,9 +114,7 @@ export function SortableTable({
                     ))}
                 </TableBody>
             </Table>
-            <div className="text-xs text-gray-500 dark:text-gray-400 p-2 text-center border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <p>* Original data can be obtained from <a href="https://docs.google.com/spreadsheets/d/1cj5KaN1tGFhlzeWfigga-vHap0OHwNRu7jUlli1vJKA/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Google Sheet</a></p>
-            </div>
+
         </div>
     );
 }

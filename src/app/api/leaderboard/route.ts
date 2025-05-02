@@ -6,7 +6,7 @@ export async function GET() {
     // Fetch data directly from Google Sheets
     const data = await fetchLeaderboardData();
 
-    if (!data || data.length === 0) {
+    if (!data || data.models.length === 0) {
       return NextResponse.json({ error: 'No data found' }, { status: 404 });
     }
 

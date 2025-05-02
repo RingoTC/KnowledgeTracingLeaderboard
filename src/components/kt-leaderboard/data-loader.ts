@@ -1,4 +1,4 @@
-import { ModelData } from "@/types";
+import { ModelData, LeaderboardData } from "@/types";
 import { cacheData } from "./cache-data";
 
 export class DataLoader {
@@ -38,7 +38,8 @@ export class DataLoader {
             if (!response.ok) {
                 throw new Error('Failed to fetch data');
             }
-            const newData = await response.json();
+            const data: LeaderboardData = await response.json();
+            const newData = data.models;
             if (this.compareData(newData)) {
                 this.apiData = newData;
             }
@@ -58,7 +59,8 @@ export class DataLoader {
             if (!response.ok) {
                 throw new Error('Failed to fetch data');
             }
-            const newData = await response.json();
+            const data: LeaderboardData = await response.json();
+            const newData = data.models;
             if (this.compareData(newData)) {
                 this.apiData = newData;
             }
@@ -73,4 +75,4 @@ export class DataLoader {
         // Compare the new data with cached data to determine if it's different
         return JSON.stringify(newData) !== JSON.stringify(this.cachedData);
     }
-} 
+}

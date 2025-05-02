@@ -119,7 +119,7 @@ export function KTLeaderboard({ data }: KTLeaderboardProps) {
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col items-center gap-2 mb-8">
                     <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-white">
-                        Knowledge Tracing Results
+                        Knowledge Tracing Leaderboard
                     </h1>
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                         <span>Metric:</span>

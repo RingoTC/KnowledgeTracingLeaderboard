@@ -9,10 +9,10 @@ export default function AboutPage() {
         </h1>
         <div className="rounded-md border bg-card p-6">
           <p className="mb-4">
-            Knowledge Tracing (KT) is the task of using students' historical learning interaction data to model their knowledge mastery over time so as to make predictions on their future interaction performance. Such predictive capabilities can potentially help students learn better and faster when paired with high-quality learning materials and instructions.
+            Knowledge Tracing (KT) is the task of using students&apos; historical learning interaction data to model their knowledge mastery over time so as to make predictions on their future interaction performance. Such predictive capabilities can potentially help students learn better and faster when paired with high-quality learning materials and instructions.
           </p>
           <p>
-            The KT problem has been studied since the 1990s, with various approaches ranging from probabilistic graphical models to modern deep learning techniques. The goal is to accurately track and predict students' knowledge states as they progress through learning materials.
+            The KT problem has been studied since the 1990s, with various approaches ranging from probabilistic graphical models to modern deep learning techniques. The goal is to accurately track and predict students&apos; knowledge states as they progress through learning materials.
           </p>
         </div>
       </section>
@@ -26,7 +26,7 @@ export default function AboutPage() {
             All In One Protocol
           </h3>
           <p className="mb-4">
-            Our evaluation follows the "All In One" protocol, which ensures fair and comprehensive comparison across different knowledge tracing models. This standardized approach includes:
+            Our evaluation follows the &quot;All In One&quot; protocol, which ensures fair and comprehensive comparison across different knowledge tracing models. This standardized approach includes:
           </p>
           <ul className="list-disc pl-6 space-y-2">
             <li>Standardized data preprocessing procedures</li>

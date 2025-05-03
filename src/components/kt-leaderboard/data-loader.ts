@@ -1,9 +1,7 @@
 import { ModelData, LeaderboardData } from "@/types";
-import { cacheData } from "./cache-data";
 
 export class DataLoader {
     private static instance: DataLoader;
-    private cachedData: ModelData[] = cacheData();
     private apiData: ModelData[] | null = null;
     private isLoading: boolean = false;
     private isPreloaded: boolean = false;
@@ -39,14 +37,11 @@ export class DataLoader {
                 throw new Error('Failed to fetch data');
             }
             const data: LeaderboardData = await response.json();
-            const newData = data.models;
-            if (this.compareData(newData)) {
-                this.apiData = newData;
-            }
-            return this.apiData || this.cachedData;
+            this.apiData = data.models;
+            return this.apiData;
         } catch (error) {
             console.error('Error loading data:', error);
-            return this.apiData || this.cachedData;
+            return this.apiData || [];
         }
     }
 
@@ -60,19 +55,11 @@ export class DataLoader {
                 throw new Error('Failed to fetch data');
             }
             const data: LeaderboardData = await response.json();
-            const newData = data.models;
-            if (this.compareData(newData)) {
-                this.apiData = newData;
-            }
+            this.apiData = data.models;
         } catch (error) {
             console.error('Error loading API data:', error);
         } finally {
             this.isLoading = false;
         }
-    }
-
-    private compareData(newData: ModelData[]): boolean {
-        // Compare the new data with cached data to determine if it's different
-        return JSON.stringify(newData) !== JSON.stringify(this.cachedData);
     }
 }

@@ -11,7 +11,8 @@ import { Dataset, ModelData } from "@/types";
 
 type MetricInfo = {
     name: string;
-    key: "accuracy" | "auc";
+    key: "accuracy" | "auc" | "rmse";
+    isHigherBetter?: boolean; // true for accuracy/auc, false for rmse
 };
 
 type SortableTableProps = {

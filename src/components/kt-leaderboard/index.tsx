@@ -17,13 +17,15 @@ import {
 
 // Constants
 const METRICS = [
-  { name: "Accuracy", key: "accuracy" as const },
-  { name: "AUC", key: "auc" as const }
+  { name: "AUC ⬇️", key: "auc" as const, isHigherBetter: true },
+  { name: "RMSE ⬆️", key: "rmse" as const, isHigherBetter: false },
+  { name: "Accuracy ⬇️", key: "accuracy" as const, isHigherBetter: true },
 ] as const;
 
 type MetricInfo = {
   name: string;
-  key: "accuracy" | "auc";
+  key: "accuracy" | "auc" | "rmse";
+  isHigherBetter?: boolean;
 };
 
 interface KTLeaderboardProps {
@@ -35,7 +37,7 @@ const useLeaderboardData = (initialData?: LeaderboardData) => {
   const [data, setData] = useState<ModelData[]>(initialData?.models || []);
   // Use only the state value without the setter since we don't need to update it
   const [lastUpdated] = useState<string | undefined>(initialData?.lastUpdated);
-  const [selectedMetric, setSelectedMetric] = useState<"accuracy" | "auc">("auc");
+  const [selectedMetric, setSelectedMetric] = useState<"accuracy" | "auc" | "rmse">("auc");
 
   useEffect(() => {
     const loadData = async () => {
@@ -73,7 +75,7 @@ const useSorting = (initialColumn = 'wins', initialDirection: "asc" | "desc" = "
 };
 
 // Custom hook for score calculations
-const useScoreCalculations = (data: ModelData[], selectedMetric: "accuracy" | "auc") => {
+const useScoreCalculations = (data: ModelData[], selectedMetric: "accuracy" | "auc" | "rmse") => {
   const datasets = useMemo(() =>
     data.length > 0 ? Object.keys(data[0].scores) : [],
     [data]
@@ -89,13 +91,17 @@ const useScoreCalculations = (data: ModelData[], selectedMetric: "accuracy" | "a
         const scores = data
           .map(model => model.scores[dataset]?.[metric.key])
           .filter((score): score is Score => score !== null)
-          .map(score => score.value)
-          .sort((a, b) => b - a);
+          .map(score => score.value);
 
         if (scores.length > 0) {
-          bestScores.set(key, scores[0]);
-          if (scores.length > 1) {
-            secondBestScores.set(key, scores[1]);
+          // Sort based on whether higher or lower is better
+          const sortedScores = metric.isHigherBetter === false 
+            ? scores.sort((a, b) => a - b)  // For RMSE, lower is better
+            : scores.sort((a, b) => b - a); // For accuracy/AUC, higher is better
+
+          bestScores.set(key, sortedScores[0]);
+          if (sortedScores.length > 1) {
+            secondBestScores.set(key, sortedScores[1]);
           }
         }
       });
@@ -113,8 +119,18 @@ const useScoreCalculations = (data: ModelData[], selectedMetric: "accuracy" | "a
       const score = datasetScores[selectedMetric];
       if (score) {
         const scoreKey = `${dataset}_${selectedMetric}`;
-        if (score.value === bestScores.get(scoreKey)) {
-          wins++;
+        const bestScore = bestScores.get(scoreKey);
+        const currentMetric = METRICS.find(m => m.key === selectedMetric);
+        
+        if (bestScore !== undefined && currentMetric) {
+          // Check if the score is the best based on the metric's nature
+          const isBest = currentMetric.isHigherBetter === false
+            ? score.value === bestScore  // For RMSE, lower is better
+            : score.value === bestScore; // For accuracy/AUC, higher is better
+          
+          if (isBest) {
+            wins++;
+          }
         }
       }
     });
@@ -200,7 +216,7 @@ export function KTLeaderboard({ initialData }: KTLeaderboardProps) {
           </p>
           <Select
             value={selectedMetric}
-            onValueChange={(value: "accuracy" | "auc") => setSelectedMetric(value)}
+            onValueChange={(value: "accuracy" | "auc" | "rmse") => setSelectedMetric(value)}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select metric" />

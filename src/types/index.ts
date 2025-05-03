@@ -6,6 +6,7 @@ export type Score = {
 export type DatasetScores = {
     accuracy: Score | null;  // null when experiment is not completed
     auc: Score | null;      // null when experiment is not completed
+    rmse: Score | null;     // null when experiment is not completed
 };
 
 export type Dataset = string;  // Dataset is just a string identifier

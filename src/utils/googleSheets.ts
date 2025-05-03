@@ -122,16 +122,19 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
       throw new Error('No sheets found in the spreadsheet');
     }
 
-    // Find AUC and ACC sheets
+    // Find AUC, ACC, and RMSE sheets
     let aucSheetName = '';
     let accSheetName = '';
+    let rmseSheetName = '';
 
-    // Look for sheets with AUC or ACC in their names
+    // Look for sheets with AUC, ACC, or RMSE in their names
     for (const name of sheetNames) {
       if (name.includes('AUC')) {
         aucSheetName = name;
       } else if (name.includes('ACC')) {
         accSheetName = name;
+      } else if (name.includes('RMSE')) {
+        rmseSheetName = name;
       }
     }
 
@@ -167,7 +170,8 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
 
         modelData.scores[normalizedDataset] = {
           accuracy: null, // Will be populated later if ACC sheet exists
-          auc: parseScoreString(score)
+          auc: parseScoreString(score),
+          rmse: null // Will be populated later if RMSE sheet exists
         };
       });
 
@@ -196,6 +200,35 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
 
               if (modelData.scores[normalizedDataset]) {
                 modelData.scores[normalizedDataset].accuracy = parseScoreString(score);
+              }
+            });
+          }
+        });
+      }
+    }
+
+    // If we have an RMSE sheet, add RMSE data
+    if (rmseSheetName) {
+      // Get RMSE data
+      const rmseRows = await getSheetData(auth, spreadsheetId, rmseSheetName);
+      if (rmseRows && rmseRows.length > 0) {
+        // Convert RMSE rows to objects
+        const rmseData = convertRowsToObjects(rmseRows);
+
+        // Add RMSE data to processed data
+        rmseData.forEach((rmseItem: BenchmarkData) => {
+          const modelName = rmseItem.Model.toString().trim();
+
+          // Find the corresponding model in processed data
+          const modelData = processedData.find(item => item.model === modelName);
+          if (modelData) {
+            // Add RMSE scores for each dataset
+            datasetNames.forEach(dataset => {
+              const score = rmseItem[dataset];
+              const normalizedDataset = normalizeDatasetName(dataset);
+
+              if (modelData.scores[normalizedDataset]) {
+                modelData.scores[normalizedDataset].rmse = parseScoreString(score);
               }
             });
           }

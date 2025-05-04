@@ -153,7 +153,9 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
     const aucData = convertRowsToObjects(aucRows);
 
     // Get all dataset names from AUC data (excluding Model column)
-    const datasetNames = Object.keys(aucData[0]).filter(key => key !== 'Model');
+    const datasetNames = Object.keys(aucData[0])
+      .filter(key => key !== 'Model')
+      .sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
 
     // Initialize processed data with AUC values
     const processedData: ModelData[] = aucData.map((item: BenchmarkData) => {
